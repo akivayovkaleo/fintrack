@@ -1,5 +1,3 @@
-// src/contexts/AuthContext.tsx
-
 'use client';
 
 import { 
@@ -17,51 +15,54 @@ import {
 import { auth } from '@/lib/firebase';
 import { useRouter } from 'next/navigation';
 
-// Define a interface para o valor do contexto
+// Define a "forma" do nosso contexto, para garantir a tipagem
 interface AuthContextType {
   user: User | null;
   loading: boolean;
   logout: () => Promise<void>;
 }
 
-// Cria o contexto com um valor padrão
+// Cria o contexto que será compartilhado com a aplicação
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Cria o Provedor do Contexto
+// Componente Provedor, que vai envolver a aplicação e fornecer os dados de autenticação
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
+  // useEffect para monitorar o estado de autenticação do Firebase em tempo real
   useEffect(() => {
-    // O onAuthStateChanged é um "ouvinte" que monitora o estado de autenticação
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user);
+    // onAuthStateChanged retorna uma função `unsubscribe` para limpar o "ouvinte"
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
       setLoading(false);
     });
 
-    // Limpa o ouvinte quando o componente é desmontado
+    // Função de limpeza: remove o "ouvinte" quando o AuthProvider é desmontado
     return () => unsubscribe();
   }, []);
 
+  // Função de logout que encerra a sessão no Firebase e redireciona o usuário
   const logout = async () => {
     try {
       await firebaseSignOut(auth);
-      // Após o logout, redireciona para a página inicial
+      // Após o logout, redireciona para a página inicial de forma segura
       router.push('/');
     } catch (error) {
       console.error("Erro ao fazer logout:", error);
     }
   };
 
+  // O valor que será fornecido para todos os componentes filhos
   const value = {
     user,
     loading,
     logout,
   };
   
-  // O `!loading` garante que não vamos renderizar as páginas filhas 
-  // antes de saber se o usuário está logado ou não, evitando "flashes" de conteúdo.
+  // Renderiza os filhos apenas quando o estado de autenticação já foi verificado.
+  // Isso evita "piscar" a tela entre estados de logado/deslogado.
   return (
     <AuthContext.Provider value={value}>
       {!loading && children}
@@ -69,9 +70,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   );
 };
 
-// Hook customizado para usar o contexto de autenticação
+// Hook customizado para facilitar o uso do contexto nos componentes
 export const useAuth = () => {
   const context = useContext(AuthContext);
+  // Garante que o hook só possa ser usado dentro de um AuthProvider
   if (context === undefined) {
     throw new Error('useAuth deve ser usado dentro de um AuthProvider');
   }

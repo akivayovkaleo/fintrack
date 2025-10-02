@@ -7,10 +7,18 @@ module.exports = {
   ],
   theme: {
     extend: {
-      // Adicione suas cores customizadas aqui
       colors: {
-        primary: '#3b82f6', // Exemplo: um tom de azul
-        secondary: '#1d4ed8', // Exemplo: um tom de azul mais escuro
+        // NOVO TEMA CLARO
+        primary: '#E935C1',               // Um magenta mais vibrante e forte
+        'primary-dark': '#C125A2',          // Versão mais escura para hover
+        'background-primary': '#FFFFFF',    // Fundo branco predominante
+        'background-secondary': '#F9FAFB',  // Um cinza muito claro para seções
+        'text-primary': '#111827',          // Texto preto (cinza bem escuro) para contraste
+        'text-secondary': '#6B7280',        // Texto secundário cinza
+        border: '#E5E7EB',                  // Borda cinza clara
+      },
+      fontFamily: {
+        sans: ['Inter', 'sans-serif'],
       },
     },
   },

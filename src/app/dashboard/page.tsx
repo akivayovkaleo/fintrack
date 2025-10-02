@@ -1,5 +1,3 @@
-// src/app/dashboard/page.tsx
-
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
@@ -15,8 +13,9 @@ import {
   Title,
   Tooltip,
   Legend,
+  ChartOptions,
 } from 'chart.js';
-import { DollarSign, TrendingUp, TrendingDown, AlertCircle } from 'lucide-react';
+import { DollarSign, TrendingUp, TrendingDown, AlertCircle, Landmark } from 'lucide-react';
 import axios from 'axios';
 
 // Registra os componentes do Chart.js
@@ -29,11 +28,33 @@ ChartJS.register(
   Legend
 );
 
-// Interfaces para os dados das APIs
+// Interfaces para os dados
 interface ApiQuotes {
   dollar: string | null;
-  ibovespa: number | null;
+  ibovespa: string | null;
 }
+
+// Componente para um Card genérico do Dashboard
+const DashboardCard = ({ title, children, className = '' }: { title: string; children: React.ReactNode; className?: string }) => (
+  <div className={`bg-background-secondary p-6 rounded-lg border border-border ${className}`}>
+    <h3 className="text-sm font-medium text-text-secondary mb-2">{title}</h3>
+    {children}
+  </div>
+);
+
+// Componente para o esqueleto de carregamento (loading skeleton)
+const SkeletonLoader = () => (
+  <div className="space-y-8 animate-pulse">
+    <div className="h-9 w-1/2 rounded-md bg-background-secondary"></div>
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="h-24 rounded-lg bg-background-secondary"></div>
+      <div className="h-24 rounded-lg bg-background-secondary"></div>
+      <div className="h-24 col-span-1 md:col-span-2 rounded-lg bg-background-secondary"></div>
+    </div>
+    <div className="h-96 rounded-lg bg-background-secondary"></div>
+  </div>
+);
+
 
 export default function DashboardPage() {
   const { user, loading: authLoading } = useAuth();
@@ -41,48 +62,42 @@ export default function DashboardPage() {
   const { transactions, loading: transactionsLoading } = useTransactions();
   const [quotes, setQuotes] = useState<ApiQuotes>({ dollar: null, ibovespa: null });
 
-  // Redireciona se o usuário não estiver logado
+  // Redireciona se não estiver logado
   useEffect(() => {
     if (!authLoading && !user) {
       router.push('/login');
     }
   }, [user, authLoading, router]);
 
-  // Busca os dados das APIs externas quando o componente monta
+  // Busca cotações das APIs
   useEffect(() => {
     const fetchQuotes = async () => {
       try {
-        // AwesomeAPI para Dólar (não precisa de chave)
-        const dollarRes = await axios.get('https://economia.awesomeapi.com.br/json/last/USD-BRL');
-        const formattedDollar = parseFloat(dollarRes.data.USDBRL.bid).toFixed(2);
-
-        // Brapi para Ibovespa (usando a chave do .env.local)
-        const ibovRes = await axios.get(`https://brapi.dev/api/quote/^BVSP?token=${process.env.NEXT_PUBLIC_BRAPI_API_KEY}`);
-        const ibovValue = ibovRes.data.results[0].regularMarketPrice;
+        const [dollarRes, ibovRes] = await Promise.all([
+          axios.get('https://economia.awesomeapi.com.br/json/last/USD-BRL'),
+          axios.get(`https://brapi.dev/api/quote/^BVSP?token=${process.env.NEXT_PUBLIC_BRAPI_API_KEY}`)
+        ]);
         
-        setQuotes({ dollar: `R$ ${formattedDollar}`, ibovespa: ibovValue });
+        const formattedDollar = `R$ ${parseFloat(dollarRes.data.USDBRL.bid).toFixed(2)}`;
+        const ibovValue = `${ibovRes.data.results[0].regularMarketPrice.toLocaleString('pt-BR')} pts`;
+
+        setQuotes({ dollar: formattedDollar, ibovespa: ibovValue });
       } catch (error) {
         console.error("Erro ao buscar cotações:", error);
-        // Não mostra erro para o usuário, apenas falha silenciosamente
+        setQuotes({ dollar: 'Erro', ibovespa: 'Erro' });
       }
     };
-    fetchQuotes();
-  }, []);
+    if (user) {
+        fetchQuotes();
+    }
+  }, [user]);
 
-  // Calcula os totais e dados para os gráficos
-  // O useMemo evita recálculos desnecessários a cada renderização
+  // Memoriza cálculos financeiros
   const financialData = useMemo(() => {
-    const income = transactions
-      .filter(t => t.type === 'income')
-      .reduce((acc, t) => acc + t.amount, 0);
-    
-    const expenses = transactions
-      .filter(t => t.type === 'expense')
-      .reduce((acc, t) => acc + t.amount, 0);
-
+    const income = transactions.filter(t => t.type === 'income').reduce((acc, t) => acc + t.amount, 0);
+    const expenses = transactions.filter(t => t.type === 'expense').reduce((acc, t) => acc + t.amount, 0);
     const balance = income - expenses;
 
-    // Dados para o gráfico de despesas por categoria
     const expensesByCategory = transactions
       .filter(t => t.type === 'expense')
       .reduce((acc, t) => {
@@ -93,7 +108,6 @@ export default function DashboardPage() {
     const chartLabels = Object.keys(expensesByCategory);
     const chartDataValues = Object.values(expensesByCategory);
 
-    // Alertas de contas a vencer
     const upcomingExpenses = transactions.filter(t => {
       if (t.type === 'expense' && t.status === 'pending') {
         const dueDate = t.date.toDate();
@@ -108,82 +122,109 @@ export default function DashboardPage() {
     return { income, expenses, balance, chartLabels, chartDataValues, upcomingExpenses };
   }, [transactions]);
 
-  // Opções para o gráfico
-  const chartOptions = {
+  // Configurações do gráfico com tema escuro
+  const chartOptions: ChartOptions<'bar'> = {
     responsive: true,
+    maintainAspectRatio: false,
     plugins: {
-      legend: { position: 'top' as const },
-      title: { display: true, text: 'Despesas por Categoria' },
+      legend: { 
+        position: 'top',
+        labels: { color: '#A7A7A7' }
+      },
+      title: { 
+        display: true, 
+        text: 'Despesas por Categoria',
+        color: '#FFFFFF',
+        font: { size: 18 }
+      },
+      tooltip: {
+        backgroundColor: '#111111',
+        titleColor: '#FFFFFF',
+        bodyColor: '#A7A7A7',
+      }
     },
+    scales: {
+      x: {
+        ticks: { color: '#A7A7A7' },
+        grid: { color: '#222222' }
+      },
+      y: {
+        ticks: { color: '#A7A7A7' },
+        grid: { color: '#222222' }
+      }
+    }
   };
 
   const chartData = {
     labels: financialData.chartLabels,
     datasets: [
       {
-        label: 'Valor Gasto',
+        label: 'Valor Gasto (R$)',
         data: financialData.chartDataValues,
-        backgroundColor: 'rgba(200, 0, 200, 0.6)', // Cor primária com transparência
+        backgroundColor: '#C800C8',
+        borderColor: '#A000A0',
+        borderRadius: 4,
+        borderWidth: 1,
       },
     ],
   };
 
+  // Exibe o esqueleto de carregamento enquanto os dados não chegam
   if (authLoading || transactionsLoading) {
-    return <div className="text-center mt-10">Carregando dados...</div>;
+    return <SkeletonLoader />;
   }
 
   return (
     <div className="space-y-8">
-      <h1 className="text-3xl font-bold">Olá, {user?.displayName || 'Usuário'}!</h1>
+      <h1 className="text-3xl font-bold text-text-primary">Bem-vindo(a), {user?.displayName || 'Usuário'}!</h1>
       
-      {/* Cards de Cotações e Balanço */}
+      {/* Cards de Métricas */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {/* Cotações */}
-        <div className="p-6 bg-white rounded-lg shadow">
-          <h3 className="font-semibold text-gray-500">Dólar (USD)</h3>
-          <p className="text-2xl font-bold">{quotes.dollar || 'Carregando...'}</p>
-        </div>
-        <div className="p-6 bg-white rounded-lg shadow">
-          <h3 className="font-semibold text-gray-500">Ibovespa</h3>
-          <p className="text-2xl font-bold">{quotes.ibovespa || 'Carregando...'}</p>
-        </div>
-        {/* Balanço */}
-        <div className="p-6 bg-white rounded-lg shadow col-span-1 md:col-span-2 lg:col-span-2 grid grid-cols-3 gap-4">
-            <div className="flex items-center space-x-2">
-                <TrendingUp className="text-green-500" size={24}/>
-                <div>
-                    <h3 className="font-semibold text-gray-500">Receitas</h3>
-                    <p className="text-xl font-bold text-green-500">{financialData.income.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
-                </div>
+        <DashboardCard title="Dólar (USD)">
+          <p className="text-2xl font-bold text-text-primary">{quotes.dollar || '...'}</p>
+        </DashboardCard>
+        <DashboardCard title="Ibovespa">
+          <p className="text-2xl font-bold text-text-primary">{quotes.ibovespa || '...'}</p>
+        </DashboardCard>
+        
+        <DashboardCard title="Balanço Financeiro" className="md:col-span-2">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                 <div className="flex items-center space-x-3">
+                    <div className="p-2 bg-green-500/10 rounded-full"><TrendingUp className="text-green-500" size={20}/></div>
+                    <div>
+                        <p className="text-sm text-text-secondary">Receitas</p>
+                        <p className="text-lg font-bold text-green-500">{financialData.income.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                    </div>
+                 </div>
+                 <div className="flex items-center space-x-3">
+                    <div className="p-2 bg-red-500/10 rounded-full"><TrendingDown className="text-red-500" size={20}/></div>
+                    <div>
+                        <p className="text-sm text-text-secondary">Despesas</p>
+                        <p className="text-lg font-bold text-red-500">{financialData.expenses.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                    </div>
+                 </div>
+                 <div className="flex items-center space-x-3">
+                    <div className="p-2 bg-blue-500/10 rounded-full"><Landmark className="text-blue-500" size={20}/></div>
+                    <div>
+                        <p className="text-sm text-text-secondary">Saldo</p>
+                        <p className="text-lg font-bold text-blue-500">{financialData.balance.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                    </div>
+                 </div>
             </div>
-            <div className="flex items-center space-x-2">
-                <TrendingDown className="text-red-500" size={24}/>
-                <div>
-                    <h3 className="font-semibold text-gray-500">Despesas</h3>
-                    <p className="text-xl font-bold text-red-500">{financialData.expenses.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
-                </div>
-            </div>
-            <div className="flex items-center space-x-2">
-                <DollarSign className="text-blue-500" size={24}/>
-                <div>
-                    <h3 className="font-semibold text-gray-500">Saldo</h3>
-                    <p className="text-xl font-bold text-blue-500">{financialData.balance.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
-                </div>
-            </div>
-        </div>
+        </DashboardCard>
       </div>
 
       {/* Alertas de Vencimento */}
       {financialData.upcomingExpenses.length > 0 && (
-        <div className="p-6 bg-yellow-100 border-l-4 border-yellow-500 rounded-lg shadow">
+        <div className="p-5 bg-yellow-500/10 border-l-4 border-yellow-500 rounded-r-lg">
           <div className="flex items-center">
-            <AlertCircle className="text-yellow-600 mr-3" />
-            <h3 className="text-xl font-bold text-yellow-800">Alertas de Vencimento</h3>
+            <AlertCircle className="text-yellow-500 mr-3" />
+            <h3 className="text-lg font-bold text-yellow-400">Alertas de Vencimento</h3>
           </div>
-          <ul className="mt-2 list-disc list-inside text-yellow-700">
+          <ul className="mt-2 ml-8 list-disc list-outside text-yellow-300/80 space-y-1">
             {financialData.upcomingExpenses.map(exp => (
               <li key={exp.id}>
-                <strong>{exp.description}</strong> - Vence em {exp.date.toDate().toLocaleDateString('pt-BR')}
+                <strong>{exp.description}</strong> ({exp.amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}) - Vence em {exp.date.toDate().toLocaleDateString('pt-BR')}
               </li>
             ))}
           </ul>
@@ -191,13 +232,17 @@ export default function DashboardPage() {
       )}
 
       {/* Gráfico */}
-      <div className="p-6 bg-white rounded-lg shadow">
-        {transactions.filter(t => t.type === 'expense').length > 0 ? (
-          <Bar options={chartOptions} data={chartData} />
-        ) : (
-          <p className="text-center text-gray-500">Nenhuma despesa registrada para exibir o gráfico.</p>
-        )}
-      </div>
+      <DashboardCard title="">
+        <div className="h-96">
+          {transactions.filter(t => t.type === 'expense').length > 0 ? (
+            <Bar options={chartOptions} data={chartData} />
+          ) : (
+            <div className="flex items-center justify-center h-full">
+                <p className="text-center text-text-secondary">Nenhuma despesa registrada para exibir o gráfico.</p>
+            </div>
+          )}
+        </div>
+      </DashboardCard>
     </div>
   );
 }

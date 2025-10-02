@@ -1,5 +1,3 @@
-// src/hooks/useTransactions.ts
-
 import { useState, useEffect, useCallback } from 'react';
 import { 
   collection, 
@@ -7,17 +5,18 @@ import {
   where, 
   onSnapshot,
   addDoc,
+  doc,
+  updateDoc,
+  deleteDoc,
   Timestamp,
-  // Faltava a importação do 'doc', 'updateDoc', 'deleteDoc' se for usar no futuro
 } from 'firebase/firestore';
-// A LINHA MAIS IMPORTANTE: Importa a nossa instância 'db' do Firebase
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'react-hot-toast';
 
-// Definindo a interface para uma transação
+// Interface para uma transação, garantindo a tipagem em todo o hook
 export interface Transaction {
-  id?: string;
+  id: string; // ID é obrigatório para update/delete
   userId: string;
   description: string;
   amount: number;
@@ -27,11 +26,15 @@ export interface Transaction {
   status?: 'paid' | 'pending';
 }
 
+// O tipo para adicionar uma nova transação (não precisa de id ou userId)
+export type NewTransaction = Omit<Transaction, 'id' | 'userId'>;
+
 export const useTransactions = () => {
   const { user } = useAuth();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Efeito para buscar as transações em tempo real
   useEffect(() => {
     if (!user) {
       setTransactions([]);
@@ -40,15 +43,16 @@ export const useTransactions = () => {
     }
 
     setLoading(true);
-    // Usamos a instância 'db' importada para referenciar a coleção
     const transactionsCollection = collection(db, "transactions");
     const q = query(transactionsCollection, where("userId", "==", user.uid));
 
+    // onSnapshot "escuta" por mudanças na coleção em tempo real
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
       const transactionsData: Transaction[] = [];
       querySnapshot.forEach((doc) => {
         transactionsData.push({ id: doc.id, ...doc.data() } as Transaction);
       });
+      // Ordena as transações pela data mais recente
       transactionsData.sort((a, b) => b.date.toMillis() - a.date.toMillis());
       setTransactions(transactionsData);
       setLoading(false);
@@ -61,13 +65,10 @@ export const useTransactions = () => {
     return () => unsubscribe();
   }, [user]);
 
-  const addTransaction = useCallback(async (transactionData: Omit<Transaction, 'id' | 'userId'>) => {
-    if (!user) {
-      toast.error("Você precisa estar logado para adicionar uma transação.");
-      return;
-    }
+  // Função para adicionar uma nova transação
+  const addTransaction = useCallback(async (transactionData: NewTransaction) => {
+    if (!user) return toast.error("Você precisa estar logado.");
     try {
-      // Usamos 'db' aqui também
       await addDoc(collection(db, "transactions"), {
         ...transactionData,
         userId: user.uid,
@@ -79,5 +80,30 @@ export const useTransactions = () => {
     }
   }, [user]);
 
-  return { transactions, loading, addTransaction };
+  // Função para ATUALIZAR uma transação existente
+  const updateTransaction = useCallback(async (transactionId: string, updatedData: Partial<NewTransaction>) => {
+    try {
+      const transactionDoc = doc(db, "transactions", transactionId);
+      await updateDoc(transactionDoc, updatedData);
+      toast.success("Transação atualizada com sucesso!");
+    } catch (error) {
+      console.error("Erro ao atualizar transação:", error);
+      toast.error("Ocorreu um erro ao atualizar a transação.");
+    }
+  }, []);
+
+  // Função para DELETAR uma transação
+  const deleteTransaction = useCallback(async (transactionId: string) => {
+    try {
+      const transactionDoc = doc(db, "transactions", transactionId);
+      await deleteDoc(transactionDoc);
+      toast.success("Transação deletada com sucesso!");
+    } catch (error) {
+      console.error("Erro ao deletar transação:", error);
+      toast.error("Ocorreu um erro ao deletar a transação.");
+    }
+  }, []);
+
+  // Retorna o estado e as funções para serem usadas nos componentes
+  return { transactions, loading, addTransaction, updateTransaction, deleteTransaction };
 };

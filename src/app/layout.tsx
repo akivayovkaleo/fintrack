@@ -1,10 +1,8 @@
-// src/app/layout.tsx
-
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 
-// Importações importantes
+
 import { AuthProvider } from "@/contexts/AuthContext";
 import Navbar from "@/components/NavBar";
 import { Toaster } from "react-hot-toast";
@@ -23,10 +21,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt-BR">
-      <body className={inter.className}>
-        {/* O AuthProvider envolve toda a aplicação */}
+      {/* MODIFICAÇÃO APLICADA AQUI:
+        Adicionamos as classes `bg-background-primary` e `text-text-primary`
+        para que o tema escuro seja o padrão em toda a aplicação.
+      */}
+      <body className={`${inter.className} bg-background-primary text-text-primary`}>
         <AuthProvider>
-          {/* O Toaster para exibir notificações */}
           <Toaster 
             position="top-right"
             toastOptions={{
