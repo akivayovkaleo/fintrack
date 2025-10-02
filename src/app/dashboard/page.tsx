@@ -17,6 +17,7 @@ import {
 } from 'chart.js';
 import { DollarSign, TrendingUp, TrendingDown, AlertCircle, Landmark } from 'lucide-react';
 import axios from 'axios';
+import Link from 'next/link';
 
 // Registra os componentes do Chart.js
 ChartJS.register(
@@ -174,75 +175,92 @@ export default function DashboardPage() {
     return <SkeletonLoader />;
   }
 
+  if (!user) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-pink-600">
+        <div className="bg-white p-8 rounded-lg shadow-md text-center">
+          <h2 className="text-2xl font-bold text-pink-600 mb-4">Acesso restrito</h2>
+          <p className="mb-4 text-black">Você precisa estar logado para acessar o dashboard.</p>
+          <Link href="/login" className="px-4 py-2 rounded bg-pink-600 text-white font-semibold hover:bg-pink-700 transition">
+            Ir para Login
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="space-y-8">
-      <h1 className="text-3xl font-bold text-text-primary">Bem-vindo(a), {user?.displayName || 'Usuário'}!</h1>
-      
-      {/* Cards de Métricas */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <DashboardCard title="Dólar (USD)">
-          <p className="text-2xl font-bold text-text-primary">{quotes.dollar || '...'}</p>
-        </DashboardCard>
-        <DashboardCard title="Ibovespa">
-          <p className="text-2xl font-bold text-text-primary">{quotes.ibovespa || '...'}</p>
-        </DashboardCard>
+    <div className="min-h-screen bg-pink-600 flex items-center justify-center">
+      <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-2xl">
+        <h1 className="text-3xl font-extrabold text-pink-600 mb-6 text-center">Dashboard</h1>
+        <p className="text-black text-center mb-4">Bem-vindo, <span className="font-bold">{user.displayName || user.email}</span>!</p>
         
-        <DashboardCard title="Balanço Financeiro" className="md:col-span-2">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                 <div className="flex items-center space-x-3">
-                    <div className="p-2 bg-green-500/10 rounded-full"><TrendingUp className="text-green-500" size={20}/></div>
-                    <div>
-                        <p className="text-sm text-text-secondary">Receitas</p>
-                        <p className="text-lg font-bold text-green-500">{financialData.income.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
-                    </div>
-                 </div>
-                 <div className="flex items-center space-x-3">
-                    <div className="p-2 bg-red-500/10 rounded-full"><TrendingDown className="text-red-500" size={20}/></div>
-                    <div>
-                        <p className="text-sm text-text-secondary">Despesas</p>
-                        <p className="text-lg font-bold text-red-500">{financialData.expenses.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
-                    </div>
-                 </div>
-                 <div className="flex items-center space-x-3">
-                    <div className="p-2 bg-blue-500/10 rounded-full"><Landmark className="text-blue-500" size={20}/></div>
-                    <div>
-                        <p className="text-sm text-text-secondary">Saldo</p>
-                        <p className="text-lg font-bold text-blue-500">{financialData.balance.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
-                    </div>
-                 </div>
+        {/* Cards de Métricas */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <DashboardCard title="Dólar (USD)">
+            <p className="text-2xl font-bold text-text-primary">{quotes.dollar || '...'}</p>
+          </DashboardCard>
+          <DashboardCard title="Ibovespa">
+            <p className="text-2xl font-bold text-text-primary">{quotes.ibovespa || '...'}</p>
+          </DashboardCard>
+          
+          <DashboardCard title="Balanço Financeiro" className="md:col-span-2">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                   <div className="flex items-center space-x-3">
+                      <div className="p-2 bg-green-500/10 rounded-full"><TrendingUp className="text-green-500" size={20}/></div>
+                      <div>
+                          <p className="text-sm text-text-secondary">Receitas</p>
+                          <p className="text-lg font-bold text-green-500">{financialData.income.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                      </div>
+                   </div>
+                   <div className="flex items-center space-x-3">
+                      <div className="p-2 bg-red-500/10 rounded-full"><TrendingDown className="text-red-500" size={20}/></div>
+                      <div>
+                          <p className="text-sm text-text-secondary">Despesas</p>
+                          <p className="text-lg font-bold text-red-500">{financialData.expenses.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                      </div>
+                   </div>
+                   <div className="flex items-center space-x-3">
+                      <div className="p-2 bg-blue-500/10 rounded-full"><Landmark className="text-blue-500" size={20}/></div>
+                      <div>
+                          <p className="text-sm text-text-secondary">Saldo</p>
+                          <p className="text-lg font-bold text-blue-500">{financialData.balance.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                      </div>
+                   </div>
+              </div>
+          </DashboardCard>
+        </div>
+
+        {/* Alertas de Vencimento */}
+        {financialData.upcomingExpenses.length > 0 && (
+          <div className="p-5 bg-yellow-500/10 border-l-4 border-yellow-500 rounded-r-lg">
+            <div className="flex items-center">
+              <AlertCircle className="text-yellow-500 mr-3" />
+              <h3 className="text-lg font-bold text-yellow-400">Alertas de Vencimento</h3>
             </div>
+            <ul className="mt-2 ml-8 list-disc list-outside text-yellow-300/80 space-y-1">
+              {financialData.upcomingExpenses.map(exp => (
+                <li key={exp.id}>
+                  <strong>{exp.description}</strong> ({exp.amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}) - Vence em {exp.date.toDate().toLocaleDateString('pt-BR')}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* Gráfico */}
+        <DashboardCard title="">
+          <div className="h-96">
+            {transactions.filter(t => t.type === 'expense').length > 0 ? (
+              <Bar options={chartOptions} data={chartData} />
+            ) : (
+              <div className="flex items-center justify-center h-full">
+                  <p className="text-center text-text-secondary">Nenhuma despesa registrada para exibir o gráfico.</p>
+              </div>
+            )}
+          </div>
         </DashboardCard>
       </div>
-
-      {/* Alertas de Vencimento */}
-      {financialData.upcomingExpenses.length > 0 && (
-        <div className="p-5 bg-yellow-500/10 border-l-4 border-yellow-500 rounded-r-lg">
-          <div className="flex items-center">
-            <AlertCircle className="text-yellow-500 mr-3" />
-            <h3 className="text-lg font-bold text-yellow-400">Alertas de Vencimento</h3>
-          </div>
-          <ul className="mt-2 ml-8 list-disc list-outside text-yellow-300/80 space-y-1">
-            {financialData.upcomingExpenses.map(exp => (
-              <li key={exp.id}>
-                <strong>{exp.description}</strong> ({exp.amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}) - Vence em {exp.date.toDate().toLocaleDateString('pt-BR')}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      {/* Gráfico */}
-      <DashboardCard title="">
-        <div className="h-96">
-          {transactions.filter(t => t.type === 'expense').length > 0 ? (
-            <Bar options={chartOptions} data={chartData} />
-          ) : (
-            <div className="flex items-center justify-center h-full">
-                <p className="text-center text-text-secondary">Nenhuma despesa registrada para exibir o gráfico.</p>
-            </div>
-          )}
-        </div>
-      </DashboardCard>
     </div>
   );
 }

@@ -2,10 +2,4 @@
 @tailwind components;
 @tailwind utilities;
 
-@layer components {
- 
-  .btn-primary {
-    @apply bg-primary text-white px-4 py-2 rounded-lg font-semibold transition-colors duration-200 hover:bg-primary-dark disabled:bg-border disabled:text-text-secondary;
-  }
-}
-
+/* Tailwind pronto para uso das cores e responsividade. */

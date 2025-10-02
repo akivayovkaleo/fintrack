@@ -8,14 +8,13 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        // NOVO TEMA CLARO
-        primary: '#E935C1',               // Um magenta mais vibrante e forte
-        'primary-dark': '#C125A2',          // Versão mais escura para hover
-        'background-primary': '#FFFFFF',    // Fundo branco predominante
-        'background-secondary': '#F9FAFB',  // Um cinza muito claro para seções
-        'text-primary': '#111827',          // Texto preto (cinza bem escuro) para contraste
-        'text-secondary': '#6B7280',        // Texto secundário cinza
-        border: '#E5E7EB',                  // Borda cinza clara
+        primary: '#E20074',               
+        'primary-dark': '#B8005F',
+        'background-primary': '#FFFFFF',
+        'background-secondary': '#F3F4F6',  
+        'text-primary': '#111827',          
+        'text-secondary': '#4B5563',        
+        border: '#D1D5DB',                  
       },
       fontFamily: {
         sans: ['Inter', 'sans-serif'],
@@ -24,3 +23,4 @@ module.exports = {
   },
   plugins: [],
 };
+

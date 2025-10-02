@@ -7,6 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { updateProfile } from 'firebase/auth';
 import { toast } from 'react-hot-toast';
+import Link from 'next/link';
 
 export default function ProfilePage() {
   const { user, loading: authLoading } = useAuth();
@@ -57,48 +58,66 @@ export default function ProfilePage() {
     }
   };
 
-  if (authLoading || !user) {
-    return <div className="text-center mt-10">Carregando perfil...</div>;
+  if (authLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-pink-600">
+        <div className="text-white text-xl font-bold">Carregando...</div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-pink-600">
+        <div className="bg-white p-8 rounded-lg shadow-md text-center">
+          <h2 className="text-2xl font-bold text-pink-600 mb-4">Acesso restrito</h2>
+          <p className="mb-4 text-black">Você precisa estar logado para acessar o perfil.</p>
+          <Link href="/login" className="px-4 py-2 rounded bg-pink-600 text-white font-semibold hover:bg-pink-700 transition">
+            Ir para Login
+          </Link>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="max-w-2xl mx-auto">
-      <h1 className="text-3xl font-bold mb-6">Meu Perfil</h1>
-      
-      <div className="bg-white p-8 rounded-lg shadow-md space-y-6">
-        <div>
-          <label className="block text-sm font-medium text-gray-500">
-            E-mail
-          </label>
-          <p className="text-lg text-gray-800 mt-1">{user.email}</p>
-          <p className="text-xs text-gray-400">O e-mail não pode ser alterado.</p>
+    <div className="min-h-screen bg-pink-600 flex items-center justify-center">
+      <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
+        <h1 className="text-3xl font-extrabold text-pink-600 mb-6 text-center">Meu Perfil</h1>
+        <div className="mb-4 text-black">
+          <strong>Nome:</strong> {user.displayName || 'Não informado'}
+        </div>
+        <div className="mb-4 text-black">
+          <strong>E-mail:</strong> {user.email}
         </div>
 
-        <form onSubmit={handleProfileUpdate} className="space-y-4">
-          <div>
-            <label htmlFor="displayName" className="block text-sm font-medium text-gray-700">
-              Nome de Exibição
-            </label>
-            <input
-              id="displayName"
-              type="text"
-              value={displayName}
-              onChange={(e) => setDisplayName(e.target.value)}
-              className="w-full mt-1 p-2 border rounded-md shadow-sm focus:ring-primary focus:border-primary"
-              required
-            />
-          </div>
+        <div className="bg-gray-100 p-4 rounded-lg mt-4">
+          <form onSubmit={handleProfileUpdate} className="space-y-4">
+            <div>
+              <label htmlFor="displayName" className="block text-sm font-medium text-gray-700">
+                Nome de Exibição
+              </label>
+              <input
+                id="displayName"
+                type="text"
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
+                className="w-full mt-1 p-2 border rounded-md shadow-sm focus:ring-primary focus:border-primary"
+                required
+              />
+            </div>
 
-          <div className="pt-2">
-            <button 
-              type="submit" 
-              disabled={isSubmitting} 
-              className="btn-primary w-full md:w-auto disabled:opacity-50"
-            >
-              {isSubmitting ? 'Salvando...' : 'Salvar Alterações'}
-            </button>
-          </div>
-        </form>
+            <div className="pt-2">
+              <button 
+                type="submit" 
+                disabled={isSubmitting} 
+                className="btn-primary w-full md:w-auto disabled:opacity-50"
+              >
+                {isSubmitting ? 'Salvando...' : 'Salvar Alterações'}
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   );

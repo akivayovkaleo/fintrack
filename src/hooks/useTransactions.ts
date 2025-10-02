@@ -104,6 +104,5 @@ export const useTransactions = () => {
     }
   }, []);
 
-  // Retorna o estado e as funções para serem usadas nos componentes
   return { transactions, loading, addTransaction, updateTransaction, deleteTransaction };
 };
