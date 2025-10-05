@@ -15,19 +15,12 @@ import {
   Legend,
   ChartOptions,
 } from 'chart.js';
-import { DollarSign, TrendingUp, TrendingDown, AlertCircle, Landmark } from 'lucide-react';
+import { DollarSign, TrendingUp, TrendingDown, AlertCircle, Landmark, Briefcase, Activity } from 'lucide-react';
 import axios from 'axios';
 import Link from 'next/link';
 
-// Registra os componentes do Chart.js
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  Title,
-  Tooltip,
-  Legend
-);
+// Registo dos componentes do Chart.js
+ChartJS.register( CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend );
 
 // Interfaces para os dados
 interface ApiQuotes {
@@ -36,24 +29,29 @@ interface ApiQuotes {
 }
 
 // Componente para um Card genérico do Dashboard
-const DashboardCard = ({ title, children, className = '' }: { title: string; children: React.ReactNode; className?: string }) => (
-  <div className={`bg-background-secondary p-6 rounded-lg border border-border ${className}`}>
-    <h3 className="text-sm font-medium text-text-secondary mb-2">{title}</h3>
+const DashboardCard = ({ title, icon, children, className = '' }: { title: string; icon: React.ReactNode; children: React.ReactNode; className?: string }) => (
+  <div className={`bg-white p-6 rounded-xl border border-gray-200 shadow-md hover:shadow-lg hover:border-[#C800C8] transition-all duration-300 ${className}`}>
+    <div className="flex items-center gap-4 mb-4">
+      <div className="text-[#C800C8]">{icon}</div>
+      <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wider">{title}</h3>
+    </div>
     {children}
   </div>
 );
 
 // Componente para o esqueleto de carregamento (loading skeleton)
 const SkeletonLoader = () => (
-  <div className="space-y-8 animate-pulse">
-    <div className="h-9 w-1/2 rounded-md bg-background-secondary"></div>
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-      <div className="h-24 rounded-lg bg-background-secondary"></div>
-      <div className="h-24 rounded-lg bg-background-secondary"></div>
-      <div className="h-24 col-span-1 md:col-span-2 rounded-lg bg-background-secondary"></div>
+    <div className="min-h-screen bg-white p-4 md:p-8">
+        <div className="container mx-auto animate-pulse">
+            <div className="h-10 w-1/3 rounded-md bg-gray-200 mb-8"></div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div className="h-32 rounded-xl bg-gray-100"></div>
+                <div className="h-32 rounded-xl bg-gray-100"></div>
+                <div className="h-32 col-span-1 md:col-span-2 rounded-xl bg-gray-100"></div>
+            </div>
+            <div className="h-96 rounded-xl bg-gray-100"></div>
+        </div>
     </div>
-    <div className="h-96 rounded-lg bg-background-secondary"></div>
-  </div>
 );
 
 
@@ -66,7 +64,7 @@ export default function DashboardPage() {
   // Redireciona se não estiver logado
   useEffect(() => {
     if (!authLoading && !user) {
-      router.push('/login');
+        router.push('/login');
     }
   }, [user, authLoading, router]);
 
@@ -76,10 +74,10 @@ export default function DashboardPage() {
       try {
         const [dollarRes, ibovRes] = await Promise.all([
           axios.get('https://economia.awesomeapi.com.br/json/last/USD-BRL'),
-          axios.get(`https://brapi.dev/api/quote/^BVSP?token=${process.env.NEXT_PUBLIC_BRAPI_API_KEY}`)
+          axios.get(`https://brapi.dev/api/quote/^BVSP?token=x8dxZ4L5awTkaHhRKLU2Gf`)
         ]);
         
-        const formattedDollar = `R$ ${parseFloat(dollarRes.data.USDBRL.bid).toFixed(2)}`;
+        const formattedDollar = `${parseFloat(dollarRes.data.USDBRL.bid).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`;
         const ibovValue = `${ibovRes.data.results[0].regularMarketPrice.toLocaleString('pt-BR')} pts`;
 
         setQuotes({ dollar: formattedDollar, ibovespa: ibovValue });
@@ -123,36 +121,18 @@ export default function DashboardPage() {
     return { income, expenses, balance, chartLabels, chartDataValues, upcomingExpenses };
   }, [transactions]);
 
-  // Configurações do gráfico com tema escuro
+  // Configurações do gráfico com tema claro
   const chartOptions: ChartOptions<'bar'> = {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
-      legend: { 
-        position: 'top',
-        labels: { color: '#A7A7A7' }
-      },
-      title: { 
-        display: true, 
-        text: 'Despesas por Categoria',
-        color: '#FFFFFF',
-        font: { size: 18 }
-      },
-      tooltip: {
-        backgroundColor: '#111111',
-        titleColor: '#FFFFFF',
-        bodyColor: '#A7A7A7',
-      }
+      legend: { display: false },
+      title: { display: true, text: 'Despesas por Categoria', color: '#111827', font: { size: 18, weight: 'bold' } },
+      tooltip: { backgroundColor: '#FFFFFF', titleColor: '#111827', bodyColor: '#4B5563', borderColor: '#E5E7EB', borderWidth: 1, }
     },
     scales: {
-      x: {
-        ticks: { color: '#A7A7A7' },
-        grid: { color: '#222222' }
-      },
-      y: {
-        ticks: { color: '#A7A7A7' },
-        grid: { color: '#222222' }
-      }
+      x: { ticks: { color: '#6B7280' }, grid: { display: false } },
+      y: { ticks: { color: '#6B7280' }, grid: { color: '#E5E7EB' } }
     }
   };
 
@@ -162,105 +142,79 @@ export default function DashboardPage() {
       {
         label: 'Valor Gasto (R$)',
         data: financialData.chartDataValues,
-        backgroundColor: '#C800C8',
-        borderColor: '#A000A0',
-        borderRadius: 4,
+        backgroundColor: 'rgba(200, 0, 200, 0.8)',
+        borderColor: 'rgba(200, 0, 200, 1)',
+        borderRadius: 6,
         borderWidth: 1,
+        hoverBackgroundColor: 'rgba(200, 0, 200, 1)',
       },
     ],
   };
 
-  // Exibe o esqueleto de carregamento enquanto os dados não chegam
-  if (authLoading || transactionsLoading) {
+  if (authLoading || transactionsLoading || !user) {
     return <SkeletonLoader />;
   }
 
-  if (!user) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-pink-600">
-        <div className="bg-white p-8 rounded-lg shadow-md text-center">
-          <h2 className="text-2xl font-bold text-pink-600 mb-4">Acesso restrito</h2>
-          <p className="mb-4 text-black">Você precisa estar logado para acessar o dashboard.</p>
-          <Link href="/login" className="px-4 py-2 rounded bg-pink-600 text-white font-semibold hover:bg-pink-700 transition">
-            Ir para Login
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-pink-600 flex items-center justify-center">
-      <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-2xl">
-        <h1 className="text-3xl font-extrabold text-pink-600 mb-6 text-center">Dashboard</h1>
-        <p className="text-black text-center mb-4">Bem-vindo, <span className="font-bold">{user.displayName || user.email}</span>!</p>
-        
-        {/* Cards de Métricas */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <DashboardCard title="Dólar (USD)">
-            <p className="text-2xl font-bold text-text-primary">{quotes.dollar || '...'}</p>
-          </DashboardCard>
-          <DashboardCard title="Ibovespa">
-            <p className="text-2xl font-bold text-text-primary">{quotes.ibovespa || '...'}</p>
-          </DashboardCard>
-          
-          <DashboardCard title="Balanço Financeiro" className="md:col-span-2">
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                   <div className="flex items-center space-x-3">
-                      <div className="p-2 bg-green-500/10 rounded-full"><TrendingUp className="text-green-500" size={20}/></div>
-                      <div>
-                          <p className="text-sm text-text-secondary">Receitas</p>
-                          <p className="text-lg font-bold text-green-500">{financialData.income.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
-                      </div>
-                   </div>
-                   <div className="flex items-center space-x-3">
-                      <div className="p-2 bg-red-500/10 rounded-full"><TrendingDown className="text-red-500" size={20}/></div>
-                      <div>
-                          <p className="text-sm text-text-secondary">Despesas</p>
-                          <p className="text-lg font-bold text-red-500">{financialData.expenses.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
-                      </div>
-                   </div>
-                   <div className="flex items-center space-x-3">
-                      <div className="p-2 bg-blue-500/10 rounded-full"><Landmark className="text-blue-500" size={20}/></div>
-                      <div>
-                          <p className="text-sm text-text-secondary">Saldo</p>
-                          <p className="text-lg font-bold text-blue-500">{financialData.balance.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
-                      </div>
-                   </div>
-              </div>
-          </DashboardCard>
-        </div>
-
-        {/* Alertas de Vencimento */}
-        {financialData.upcomingExpenses.length > 0 && (
-          <div className="p-5 bg-yellow-500/10 border-l-4 border-yellow-500 rounded-r-lg">
-            <div className="flex items-center">
-              <AlertCircle className="text-yellow-500 mr-3" />
-              <h3 className="text-lg font-bold text-yellow-400">Alertas de Vencimento</h3>
+    <div className="min-h-screen bg-gray-50 text-gray-900">
+        <div className="container mx-auto p-4 md:p-8">
+            <header className="mb-8">
+                <p className="text-gray-600">Visão geral</p>
+                <h1 className="text-3xl font-bold tracking-tight">
+                    Bem-vindo de volta, <span className="text-[#C800C8]">{user.displayName || user.email}</span>!
+                </h1>
+            </header>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <DashboardCard title="Dólar (USD)" icon={<DollarSign size={24}/>}>
+                    <p className="text-3xl font-bold">{quotes.dollar || '...'}</p>
+                </DashboardCard>
+                <DashboardCard title="Ibovespa" icon={<Activity size={24}/>}>
+                    <p className="text-3xl font-bold">{quotes.ibovespa || '...'}</p>
+                </DashboardCard>
+                
+                <DashboardCard title="Balanço Financeiro" icon={<Briefcase size={24}/>} className="md:col-span-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center md:text-left">
+                        <div>
+                            <div className="flex items-center justify-center md:justify-start gap-2"><TrendingUp className="text-green-500" size={20}/><p className="text-sm text-gray-500">Receitas</p></div>
+                            <p className="text-xl font-bold text-green-600">{financialData.income.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                        </div>
+                        <div>
+                            <div className="flex items-center justify-center md:justify-start gap-2"><TrendingDown className="text-red-500" size={20}/><p className="text-sm text-gray-500">Despesas</p></div>
+                            <p className="text-xl font-bold text-red-600">{financialData.expenses.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                        </div>
+                        <div>
+                            <div className="flex items-center justify-center md:justify-start gap-2"><Landmark className="text-blue-500" size={20}/><p className="text-sm text-gray-500">Saldo</p></div>
+                            <p className="text-xl font-bold text-blue-600">{financialData.balance.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                        </div>
+                    </div>
+                </DashboardCard>
             </div>
-            <ul className="mt-2 ml-8 list-disc list-outside text-yellow-300/80 space-y-1">
-              {financialData.upcomingExpenses.map(exp => (
-                <li key={exp.id}>
-                  <strong>{exp.description}</strong> ({exp.amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}) - Vence em {exp.date.toDate().toLocaleDateString('pt-BR')}
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
 
-        {/* Gráfico */}
-        <DashboardCard title="">
-          <div className="h-96">
-            {transactions.filter(t => t.type === 'expense').length > 0 ? (
-              <Bar options={chartOptions} data={chartData} />
-            ) : (
-              <div className="flex items-center justify-center h-full">
-                  <p className="text-center text-text-secondary">Nenhuma despesa registrada para exibir o gráfico.</p>
-              </div>
+            {financialData.upcomingExpenses.length > 0 && (
+                <div className="p-5 bg-yellow-50 border border-yellow-300 rounded-xl mb-8">
+                    <div className="flex items-center"><AlertCircle className="text-yellow-500 mr-3" /><h3 className="text-lg font-bold text-yellow-800">Alertas de Vencimento</h3></div>
+                    <ul className="mt-2 ml-8 list-disc list-outside text-yellow-700 space-y-1">
+                        {financialData.upcomingExpenses.map(exp => (
+                        <li key={exp.id}><strong>{exp.description}</strong> ({exp.amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}) - Vence em {exp.date.toDate().toLocaleDateString('pt-BR')}</li>
+                        ))}
+                    </ul>
+                </div>
             )}
-          </div>
-        </DashboardCard>
-      </div>
+
+            <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-md">
+                <div className="h-96">
+                    {transactions.filter(t => t.type === 'expense').length > 0 ? (
+                        <Bar options={chartOptions} data={chartData} />
+                    ) : (
+                        <div className="flex flex-col items-center justify-center h-full text-center">
+                            <p className="text-gray-500">Nenhuma despesa registada para exibir o gráfico.</p>
+                            <p className="text-sm text-gray-400 mt-2">Adicione a sua primeira transação para começar.</p>
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
     </div>
   );
 }

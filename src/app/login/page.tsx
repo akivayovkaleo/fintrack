@@ -6,11 +6,13 @@ import { signInWithEmailAndPassword, signInWithPopup, sendPasswordResetEmail } f
 import { auth, googleProvider, githubProvider } from '@/lib/firebase';
 import { toast } from 'react-hot-toast';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation'; // Importa o useRouter
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const router = useRouter(); // Instancia o router
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -18,7 +20,7 @@ export default function LoginPage() {
     try {
       await signInWithEmailAndPassword(auth, email, password);
       toast.success('Login bem-sucedido!');
-      window.location.href = '/dashboard';
+      router.push('/dashboard'); // Redirecionamento otimizado
     } catch (error: any) {
       toast.error(error.message || 'Erro ao fazer login');
     } finally {
@@ -31,11 +33,11 @@ export default function LoginPage() {
     try {
       await signInWithPopup(auth, provider);
       toast.success('Login bem-sucedido!');
-      window.location.href = '/dashboard';
+      router.push('/dashboard'); // Redirecionamento otimizado
     } catch (error: any) {
       if (error.code === "auth/account-exists-with-different-credential") {
         toast.error(
-          "Já existe uma conta com este e-mail usando outro método de login. Por favor, faça login com o provedor correto."
+          "Já existe uma conta com este e-mail usando outro método de login."
         );
       } else {
         toast.error(error.message || 'Erro ao fazer login com provedor');
@@ -47,13 +49,12 @@ export default function LoginPage() {
 
   const handleResetPassword = async () => {
     if (!email) {
-      toast.error('Por favor, insira seu e-mail');
-      return;
+      return toast.error('Por favor, insira o seu e-mail no campo acima para redefinir a senha.');
     }
     setLoading(true);
     try {
       await sendPasswordResetEmail(auth, email);
-      toast.success('E-mail de recuperação enviado!');
+      toast.success('E-mail de recuperação enviado! Verifique a sua caixa de entrada.');
     } catch (error: any) {
       toast.error(error.message || 'Erro ao enviar e-mail de recuperação');
     } finally {
@@ -62,9 +63,11 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-pink-600">
-      <div className="bg-white rounded-lg shadow-md w-full max-w-md p-8">
-        <h1 className="text-2xl font-bold text-pink-600 mb-6 text-center">Acesse sua conta</h1>
+    <div className="min-h-[calc(100vh-80px)] flex items-center justify-center bg-gray-50 py-12 px-4">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-8 border border-gray-200">
+        <h1 className="text-3xl font-bold text-gray-900 mb-2 text-center">Acesse a sua Conta</h1>
+        <p className="text-center text-gray-500 mb-6">Continue a organizar as suas finanças.</p>
+        
         <form onSubmit={handleLogin} className="space-y-4">
           <input
             type="email"
@@ -72,7 +75,7 @@ export default function LoginPage() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            className="w-full px-4 py-3 border border-pink-600 rounded-md bg-white text-black focus:outline-none focus:ring-2 focus:ring-pink-600"
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#C800C8]"
           />
           <input
             type="password"
@@ -80,51 +83,51 @@ export default function LoginPage() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
-            className="w-full px-4 py-3 border border-pink-600 rounded-md bg-white text-black focus:outline-none focus:ring-2 focus:ring-pink-600"
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#C800C8]"
           />
           <button
             type="submit"
             disabled={loading}
-            className={`w-full py-3 rounded-md font-bold bg-pink-600 text-white hover:bg-pink-700 transition ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
+            className={`w-full py-3 rounded-lg font-bold bg-[#C800C8] text-black hover:bg-fuchsia-500 transition-colors ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
           >
-            {loading ? 'Entrando...' : 'Entrar'}
+            {loading ? 'A entrar...' : 'Entrar'}
           </button>
         </form>
-        <div className="mt-4 flex flex-col gap-2 items-center">
+
+        <div className="mt-4 text-center">
           <button
             onClick={handleResetPassword}
-            className="text-sm text-pink-600 hover:underline"
+            disabled={loading}
+            className="text-sm text-gray-600 hover:text-[#C800C8] hover:underline"
           >
-            Esqueci minha senha
+            Esqueceu a sua senha?
           </button>
-          <Link href="/register" className="text-sm text-pink-600 hover:underline">
-            Criar conta
-          </Link>
         </div>
+
         <div className="mt-6">
-          <div className="flex items-center my-4">
-            <div className="flex-grow border-t border-pink-200"></div>
-            <span className="mx-4 text-sm text-pink-600">ou</span>
-            <div className="flex-grow border-t border-pink-200"></div>
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-gray-300" /></div>
+            <div className="relative flex justify-center text-sm"><span className="px-2 bg-white text-gray-500">ou continue com</span></div>
           </div>
-          <div className="space-y-2">
-            <button
-              onClick={() => handleOAuthLogin(googleProvider)}
-              disabled={loading}
-              className={`w-full flex items-center justify-center gap-2 py-3 px-4 rounded-md bg-white text-pink-600 font-semibold hover:bg-pink-50 border border-pink-600 ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
-            >
-              <img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" alt="Google" className="w-5 h-5" />
-              Entrar com Google
+          <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-3">
+             <button onClick={() => handleOAuthLogin(googleProvider)} disabled={loading} className="w-full inline-flex justify-center items-center gap-2 py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" alt="Google" className="w-5 h-5" />
+                Google
             </button>
-            <button
-              onClick={() => handleOAuthLogin(githubProvider)}
-              disabled={loading}
-              className={`w-full flex items-center justify-center gap-2 py-3 px-4 rounded-md bg-white text-pink-600 font-semibold hover:bg-pink-50 border border-pink-600 ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
-            >
-              <img src="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png" alt="GitHub" className="w-5 h-5" />
-              Entrar com GitHub
+            <button onClick={() => handleOAuthLogin(githubProvider)} disabled={loading} className="w-full inline-flex justify-center items-center gap-2 py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                <img src="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png" alt="GitHub" className="w-5 h-5" />
+                GitHub
             </button>
           </div>
+        </div>
+
+         <div className="mt-6 text-center">
+            <p className="text-sm text-gray-600">
+                Não tem uma conta?{' '}
+                <Link href="/register" className="font-semibold text-[#C800C8] hover:underline">
+                    Registe-se
+                </Link>
+            </p>
         </div>
       </div>
     </div>
