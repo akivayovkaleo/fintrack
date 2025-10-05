@@ -36,23 +36,34 @@ export default function RegisterPage() {
   const [cpfError, setCpfError] = useState('');
   const router = useRouter();
 
-  // Validação e formatação em tempo real do CPF
+  // ***** INÍCIO DA CORREÇÃO PRINCIPAL *****
+  // Nova função de formatação e validação em tempo real do CPF
   const handleCpfChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const rawValue = e.target.value.replace(/[^\d]/g, '');
+    let value = e.target.value;
     
-    let formattedCpf = rawValue;
-    if (rawValue.length > 3) formattedCpf = `${rawValue.slice(0, 3)}.${rawValue.slice(3)}`;
-    if (rawValue.length > 6) formattedCpf = `${formattedCpf.slice(0, 7)}.${rawValue.slice(7)}`;
-    if (rawValue.length > 9) formattedCpf = `${formattedCpf.slice(0, 11)}-${rawValue.slice(11)}`;
-    
-    setCpf(formattedCpf.slice(0, 14));
+    // 1. Remove tudo que não for dígito
+    value = value.replace(/\D/g, '');
 
+    // 2. Limita a 11 dígitos
+    value = value.substring(0, 11);
+
+    // 3. Aplica a máscara (XXX.XXX.XXX-XX) de forma inteligente
+    value = value.replace(/(\d{3})(\d)/, '$1.$2');
+    value = value.replace(/(\d{3})(\d)/, '$1.$2');
+    value = value.replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+
+    // 4. Atualiza o estado
+    setCpf(value);
+
+    // 5. Valida o CPF apenas quando ele está completo
+    const rawValue = value.replace(/\D/g, '');
     if (rawValue.length === 11 && !validateCPF(rawValue)) {
-      setCpfError('CPF inválido.');
+        setCpfError('CPF inválido.');
     } else {
-      setCpfError('');
+        setCpfError('');
     }
   };
+  // ***** FIM DA CORREÇÃO PRINCIPAL *****
 
   // Registo com E-mail/Senha
   const handleSubmit = async (e: React.FormEvent) => {
@@ -71,7 +82,6 @@ export default function RegisterPage() {
       await updateProfile(user, { displayName: name });
       await sendEmailVerification(user);
 
-      // Salva dados adicionais no Firestore
       await setDoc(doc(db, "users", user.uid), { name, email, cpf: rawCpf });
 
       toast.success('Conta criada! Verifique o seu e-mail para ativar a sua conta.');
@@ -83,19 +93,18 @@ export default function RegisterPage() {
     }
   };
 
-  // Registo com Provedores OAuth (Google, GitHub)
+  // Registo com Provedores OAuth
   const handleOAuthRegister = async (provider: any) => {
     setLoading(true);
     try {
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
 
-      // Salva ou atualiza dados no Firestore
       await setDoc(doc(db, "users", user.uid), {
         name: user.displayName || "",
         email: user.email || "",
-        cpf: "" // CPF fica em branco para ser preenchido mais tarde no perfil
-      }, { merge: true }); // 'merge: true' evita sobrescrever dados se o utilizador já existir
+        cpf: ""
+      }, { merge: true });
 
       toast.success('Conta criada com sucesso!');
       router.push('/dashboard');
