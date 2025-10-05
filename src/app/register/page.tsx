@@ -36,84 +36,83 @@ export default function RegisterPage() {
   const [cpfError, setCpfError] = useState('');
   const router = useRouter();
 
-  // ***** INÍCIO DA CORREÇÃO PRINCIPAL *****
-  // Nova função de formatação e validação em tempo real do CPF
+  // Validação e formatação em tempo real do CPF
   const handleCpfChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let value = e.target.value;
-    
-    // 1. Remove tudo que não for dígito
-    value = value.replace(/\D/g, '');
-
-    // 2. Limita a 11 dígitos
-    value = value.substring(0, 11);
-
-    // 3. Aplica a máscara (XXX.XXX.XXX-XX) de forma inteligente
+    let value = e.target.value.replace(/\D/g, '').substring(0, 11);
     value = value.replace(/(\d{3})(\d)/, '$1.$2');
     value = value.replace(/(\d{3})(\d)/, '$1.$2');
     value = value.replace(/(\d{3})(\d{1,2})$/, '$1-$2');
-
-    // 4. Atualiza o estado
     setCpf(value);
 
-    // 5. Valida o CPF apenas quando ele está completo
     const rawValue = value.replace(/\D/g, '');
     if (rawValue.length === 11 && !validateCPF(rawValue)) {
-        setCpfError('CPF inválido.');
+      setCpfError('CPF inválido.');
     } else {
-        setCpfError('');
+      setCpfError('');
     }
   };
-  // ***** FIM DA CORREÇÃO PRINCIPAL *****
 
-  // Registo com E-mail/Senha
+  // ***** INÍCIO DA CORREÇÃO PRINCIPAL *****
+  // Registo com E-mail/Senha usando toast.promise
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const rawCpf = cpf.replace(/[^\d]/g, '');
     if (!validateCPF(rawCpf)) {
-      toast.error('Por favor, insira um CPF válido.');
-      return;
+      return toast.error('Por favor, insira um CPF válido.');
     }
-
     setLoading(true);
-    try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      const user = userCredential.user;
+
+    const registrationPromise = async () => {
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
       
-      await updateProfile(user, { displayName: name });
-      await sendEmailVerification(user);
+        await updateProfile(user, { displayName: name });
+        await sendEmailVerification(user);
+        await setDoc(doc(db, "users", user.uid), { name, email, cpf: rawCpf });
+    };
 
-      await setDoc(doc(db, "users", user.uid), { name, email, cpf: rawCpf });
-
-      toast.success('Conta criada! Verifique o seu e-mail para ativar a sua conta.');
-      router.push('/login');
-    } catch (error: any) {
-      toast.error(error.message || 'Erro ao registar');
-    } finally {
-      setLoading(false);
-    }
+    toast.promise(registrationPromise(), {
+      loading: 'A criar a sua conta...',
+      success: () => {
+        setLoading(false);
+        router.push('/login'); // Redireciona para o login após o sucesso
+        return 'Conta criada! Verifique o seu e-mail para a ativar.';
+      },
+      error: (err) => {
+        setLoading(false);
+        return err.message || 'Erro ao registar. Tente novamente.';
+      },
+    });
   };
 
-  // Registo com Provedores OAuth
+  // Registo com Provedores OAuth usando toast.promise
   const handleOAuthRegister = async (provider: any) => {
     setLoading(true);
-    try {
-      const result = await signInWithPopup(auth, provider);
-      const user = result.user;
+    
+    const oauthPromise = async () => {
+        const result = await signInWithPopup(auth, provider);
+        const user = result.user;
+        await setDoc(doc(db, "users", user.uid), {
+            name: user.displayName || "",
+            email: user.email || "",
+            cpf: "" 
+        }, { merge: true });
+    };
 
-      await setDoc(doc(db, "users", user.uid), {
-        name: user.displayName || "",
-        email: user.email || "",
-        cpf: ""
-      }, { merge: true });
-
-      toast.success('Conta criada com sucesso!');
-      router.push('/dashboard');
-    } catch (error: any) {
-      toast.error(error.message || 'Erro ao registar com provedor');
-    } finally {
-      setLoading(false);
-    }
+    toast.promise(oauthPromise(), {
+        loading: 'A redirecionar...',
+        success: () => {
+            setLoading(false);
+            router.push('/dashboard'); // Redireciona para o dashboard
+            return 'Login bem-sucedido!';
+        },
+        error: (err) => {
+            setLoading(false);
+            return err.message || 'Erro ao fazer login com provedor.';
+        },
+    });
   };
+  // ***** FIM DA CORREÇÃO PRINCIPAL *****
 
   return (
     <div className="min-h-[calc(100vh-80px)] flex items-center justify-center bg-gray-50 py-12 px-4">
