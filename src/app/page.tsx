@@ -55,15 +55,42 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Seção Depoimentos */}
-      <section id="depoimentos" className="py-20 bg-white">
-        <div className="container mx-auto px-6">
-          <h2 className="text-4xl md:text-5xl font-extrabold text-center mb-12 text-gray-900">
-            O que os nossos <span className="text-[#C800C8]">clientes dizem</span>
-          </h2>
-          {/* Depoimentos... */}
-        </div>
-      </section>
-    </>
-  );
+     {/* Seção Depoimentos */}
+<section id="depoimentos" className="py-20 bg-white">
+  <div className="container mx-auto px-6">
+    <h2 className="text-4xl md:text-5xl font-extrabold text-center mb-12 text-gray-900">
+      O que os nossos <span className="text-[#C800C8]">clientes dizem</span>
+    </h2>
+    
+    <div className="grid md:grid-cols-3 gap-10">
+      {/* Depoimento 1 */}
+      <div className="bg-gray-50 p-6 rounded-lg shadow-md">
+        <p className="text-gray-700 text-lg mb-4">
+          “Fiquei impressionado com a qualidade do atendimento e a agilidade na entrega. Superaram todas as minhas expectativas!”
+        </p>
+        <div className="text-sm text-gray-900 font-semibold">João Pereira</div>
+        <div className="text-sm text-gray-500">São Paulo - SP</div>
+      </div>
+
+      {/* Depoimento 2 */}
+      <div className="bg-gray-50 p-6 rounded-lg shadow-md">
+        <p className="text-gray-700 text-lg mb-4">
+          “Simplesmente sensacional! Atendimento humanizado, produto impecável e entrega antes do prazo. Recomendo de olhos fechados.”
+        </p>
+        <div className="text-sm text-gray-900 font-semibold">Carla Monteiro</div>
+        <div className="text-sm text-gray-500">Belo Horizonte - MG</div>
+      </div>
+
+      {/* Depoimento 3 */}
+      <div className="bg-gray-50 p-6 rounded-lg shadow-md">
+        <p className="text-gray-700 text-lg mb-4">
+          “Foi a melhor experiência de compra que já tive. Tudo muito fácil e rápido, e o suporte foi incrível do começo ao fim.”
+        </p>
+        <div className="text-sm text-gray-900 font-semibold">Lucas Almeida</div>
+        <div className="text-sm text-gray-500">Curitiba - PR</div>
+      </div>
+    </div>
+  </div>
+</section>
+</>); 
 }
