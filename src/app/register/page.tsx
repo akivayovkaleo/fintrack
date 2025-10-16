@@ -75,8 +75,8 @@ export default function RegisterPage() {
       loading: 'A criar a sua conta...',
       success: () => {
         setLoading(false);
-        router.push('/login'); // Redireciona para o login após o sucesso
-        return 'Conta criada! Verifique o seu e-mail para a ativar.';
+        router.push('/dashboard'); // Redireciona para o dashboard após o sucesso
+        return 'Conta criada! Bem-vindo ao Fintrack.';
       },
       error: (err) => {
         setLoading(false);
