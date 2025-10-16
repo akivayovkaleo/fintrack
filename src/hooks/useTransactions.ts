@@ -13,6 +13,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'react-hot-toast';
 
 export interface Transaction {
   id: string;
@@ -56,21 +57,42 @@ export const useTransactions = () => {
   }, [user]);
 
   const addTransaction = useCallback(async (transactionData: NewTransaction) => {
-    if (!user) throw new Error("Utilizador não autenticado");
-    return addDoc(collection(db, "transactions"), { 
-      ...transactionData,
-      userId: user.uid,
-    });
+    if (!user) {
+      toast.error("Você precisa estar logado para adicionar uma transação.");
+      throw new Error("Utilizador não autenticado");
+    }
+    try {
+      await addDoc(collection(db, "transactions"), {
+        ...transactionData,
+        userId: user.uid,
+      });
+      toast.success("Transação adicionada com sucesso!");
+    } catch (error) {
+      toast.error("Erro ao adicionar transação.");
+      console.error(error);
+    }
   }, [user]);
 
   const updateTransaction = useCallback(async (transactionId: string, updatedData: Partial<NewTransaction>) => {
-    const transactionDoc = doc(db, "transactions", transactionId);
-    return updateDoc(transactionDoc, updatedData); 
+    try {
+      const transactionDoc = doc(db, "transactions", transactionId);
+      await updateDoc(transactionDoc, updatedData);
+      toast.success("Transação atualizada com sucesso!");
+    } catch (error) {
+      toast.error("Erro ao atualizar transação.");
+      console.error(error);
+    }
   }, []);
 
   const deleteTransaction = useCallback(async (transactionId: string) => {
-    const transactionDoc = doc(db, "transactions", transactionId);
-    return deleteDoc(transactionDoc); 
+    try {
+      const transactionDoc = doc(db, "transactions", transactionId);
+      await deleteDoc(transactionDoc);
+      toast.success("Transação deletada com sucesso!");
+    } catch (error) {
+      toast.error("Erro ao deletar transação.");
+      console.error(error);
+    }
   }, []);
 
   return { transactions, loading, addTransaction, updateTransaction, deleteTransaction };

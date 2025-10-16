@@ -1,26 +1,22 @@
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { useTransactions } from '@/hooks/useTransactions';
 import { useQuotes } from '@/hooks/useQuotes';
-import { Bar } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  BarElement,
+  ArcElement,
   Title,
   Tooltip,
   Legend,
   ChartOptions,
 } from 'chart.js';
-import { DollarSign, TrendingUp, TrendingDown, AlertCircle, Landmark, Briefcase, Activity } from 'lucide-react';
-import Link from 'next/link';
+import { DollarSign, AlertCircle, Activity } from 'lucide-react';
 
 // Registo dos componentes do Chart.js
-ChartJS.register( CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend );
+ChartJS.register( ArcElement, Title, Tooltip, Legend );
 
 import DashboardCard from '@/components/dashboard/DashboardCard';
 import FinancialSummary from '@/components/dashboard/FinancialSummary';
@@ -87,18 +83,39 @@ export default function DashboardPage() {
   }, [transactions]);
 
   // Configurações do gráfico com tema claro
-  const chartOptions: ChartOptions<'bar'> = {
+  const chartOptions: ChartOptions<'doughnut'> = {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
-      legend: { display: false },
+      legend: {
+        position: 'bottom',
+        labels: {
+          color: '#6B7280',
+          boxWidth: 20,
+          padding: 20,
+        },
+      },
       title: { display: true, text: 'Despesas por Categoria', color: '#111827', font: { size: 18, weight: 'bold' } },
-      tooltip: { backgroundColor: '#FFFFFF', titleColor: '#111827', bodyColor: '#4B5563', borderColor: '#E5E7EB', borderWidth: 1, }
+      tooltip: {
+        backgroundColor: '#FFFFFF',
+        titleColor: '#111827',
+        bodyColor: '#4B5563',
+        borderColor: '#E5E7EB',
+        borderWidth: 1,
+        callbacks: {
+          label: function(context) {
+            let label = context.label || '';
+            if (label) {
+              label += ': ';
+            }
+            if (context.parsed !== null) {
+              label += new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(context.parsed);
+            }
+            return label;
+          }
+        }
+      }
     },
-    scales: {
-      x: { ticks: { color: '#6B7280' }, grid: { display: false } },
-      y: { ticks: { color: '#6B7280' }, grid: { color: '#E5E7EB' } }
-    }
   };
 
   const chartData = {
@@ -107,11 +124,17 @@ export default function DashboardPage() {
       {
         label: 'Valor Gasto (R$)',
         data: financialData.chartDataValues,
-        backgroundColor: 'rgba(200, 0, 200, 0.8)',
-        borderColor: 'rgba(200, 0, 200, 1)',
-        borderRadius: 6,
-        borderWidth: 1,
-        hoverBackgroundColor: 'rgba(200, 0, 200, 1)',
+        backgroundColor: [
+          '#C800C8',
+          '#A000A0',
+          '#800080',
+          '#600060',
+          '#400040',
+          '#200020',
+        ],
+        borderColor: '#fff',
+        borderWidth: 2,
+        hoverOffset: 4,
       },
     ],
   };
@@ -130,6 +153,12 @@ export default function DashboardPage() {
                 </h1>
             </header>
             
+            {quotesError && (
+                <div className="p-5 bg-red-50 border border-red-300 rounded-xl mb-8">
+                    <div className="flex items-center"><AlertCircle className="text-red-500 mr-3" /><h3 className="text-lg font-bold text-red-800">Erro ao Carregar Cotações</h3></div>
+                    <p className="mt-2 ml-8 text-red-700">{quotesError}</p>
+                </div>
+            )}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                 <DashboardCard title="Dólar (USD)" icon={<DollarSign size={24}/>}>
                     <p className="text-3xl font-bold">{quotes.dollar || '...'}</p>

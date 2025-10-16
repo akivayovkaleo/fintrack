@@ -12,6 +12,7 @@ import { signOut } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { toast } from 'react-hot-toast';
 import { LayoutDashboard, Landmark, User, LogOut, Menu, X } from 'lucide-react';
+import { ThemeToggleButton } from '@/components/ThemeToggleButton';
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -59,6 +60,7 @@ const AppHeader = () => {
         
         {/* Botões do Desktop */}
         <div className="hidden md:flex items-center space-x-4">
+          <ThemeToggleButton />
           {user ? (
             <button onClick={handleLogout} className="flex items-center gap-2 px-4 py-2 border border-white rounded-full text-sm font-bold hover:bg-white hover:text-black transition-colors">
               <LogOut size={16} /> Sair
@@ -121,6 +123,8 @@ const Footer = () => (
 );
 
 
+import { ThemeProvider } from '@/contexts/ThemeContext';
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -131,12 +135,14 @@ export default function RootLayout({
   return (
     <html lang="pt-BR">
       <body className={`${inter.className} bg-white min-h-screen`}>
-        <AuthProvider>
-          <AppHeader />
-          <main>{children}</main>
-          {pathname === '/' && <Footer />}
-          <Toaster position="top-right" toastOptions={{ duration: 3000 }} />
-        </AuthProvider>
+        <ThemeProvider>
+          <AuthProvider>
+            <AppHeader />
+            <main>{children}</main>
+            {pathname === '/' && <Footer />}
+            <Toaster position="top-right" toastOptions={{ duration: 3000 }} />
+          </AuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   );
