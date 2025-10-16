@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { useTransactions, Transaction, NewTransaction } from '@/hooks/useTransactions';
 import { Plus, Edit, Trash2, Filter } from 'lucide-react';
+import Pagination from '@/components/Pagination';
 import { toast } from 'react-hot-toast';
 import { Timestamp } from 'firebase/firestore';
 
@@ -30,6 +31,8 @@ export default function TransactionsPage() {
 
   const [filterCategory, setFilterCategory] = useState('');
   const [filterDate, setFilterDate] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -38,12 +41,25 @@ export default function TransactionsPage() {
   }, [user, authLoading, router]);
 
   const filteredTransactions = useMemo(() => {
-    return transactions.filter(t => {
+    const filtered = transactions.filter(t => {
       const categoryMatch = filterCategory ? t.category.toLowerCase() === filterCategory.toLowerCase() : true;
       const dateMatch = filterDate ? t.date.toDate().toISOString().split('T')[0] === filterDate : true;
       return categoryMatch && dateMatch;
     });
-  }, [transactions, filterCategory, filterDate]);
+
+    const indexOfLastItem = currentPage * itemsPerPage;
+    const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+    return filtered.slice(indexOfFirstItem, indexOfLastItem);
+  }, [transactions, filterCategory, filterDate, currentPage, itemsPerPage]);
+
+  const totalPages = useMemo(() => {
+    const filtered = transactions.filter(t => {
+      const categoryMatch = filterCategory ? t.category.toLowerCase() === filterCategory.toLowerCase() : true;
+      const dateMatch = filterDate ? t.date.toDate().toISOString().split('T')[0] === filterDate : true;
+      return categoryMatch && dateMatch;
+    });
+    return Math.ceil(filtered.length / itemsPerPage);
+  }, [transactions, filterCategory, filterDate, itemsPerPage]);
 
   const uniqueCategories = useMemo(() => {
     return [...new Set(transactions.map(t => t.category))];
@@ -196,6 +212,11 @@ export default function TransactionsPage() {
               <p className="p-6 text-center text-gray-500">Nenhuma transação encontrada. Clique em "Adicionar Transação" para começar.</p>
            )}
         </div>
+        <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+        />
       </div>
 
       {isModalOpen && (

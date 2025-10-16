@@ -22,6 +22,7 @@ import DashboardCard from '@/components/dashboard/DashboardCard';
 import FinancialSummary from '@/components/dashboard/FinancialSummary';
 import CategoryChart from '@/components/dashboard/CategoryChart';
 import UpcomingExpenses from '@/components/dashboard/UpcomingExpenses';
+import RecentTransactions from '@/components/dashboard/RecentTransactions';
 
 // Componente para o esqueleto de carregamento (loading skeleton)
 const SkeletonLoader = () => (
@@ -181,6 +182,8 @@ export default function DashboardPage() {
                 chartOptions={chartOptions}
                 hasTransactions={transactions.filter(t => t.type === 'expense').length > 0}
             />
+
+            <RecentTransactions transactions={transactions} />
         </div>
     </div>
   );
